@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Echo - Agentic AI Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+
+    <style>
+        :root {
+            --bg-dark: #111827;
+            --bg-light: #1F2937;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --primary: #8B5CF6;
+            --primary-light: #A78BFA;
+            --green: #34D399;
+            --yellow: #FBBF24;
+            --red: #F87171;
+            --cyan: #22D3EE;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: #E5E7EB;
+            overflow: hidden;
+        }
+
+        .glass-card {
+            background: rgba(31, 41, 55, 0.5);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 1rem;
+        }
+
+        .sidebar-icon {
+            transition: all 0.2s ease-in-out;
+        }
+        .sidebar-icon:hover, .sidebar-icon.active {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: all 0.2s ease-in-out;
+            border: 1px solid transparent;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+            box-shadow: 0 4px 15px -5px rgba(139, 92, 246, 0.6);
+        }
+        .btn-primary:hover {
+            background-color: var(--primary-light);
+            transform: translateY(-2px);
+        }
+        .btn-secondary {
+            background-color: rgba(255, 255, 255, 0.05);
+            border-color: var(--border-color);
+        }
+        .btn-secondary:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-light); }
+        ::-webkit-scrollbar-thumb { background: #4B5563; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #6B7280; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-in { animation: fadeIn 0.5s ease-out forwards; }
+        
+        .modal-backdrop {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(5px);
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content { z-index: 51; }
+        
+        details > summary { list-style: none; cursor: pointer; }
+        details > summary::-webkit-details-marker { display: none; }
+        details .summary-icon { transition: transform 0.2s ease-in-out; }
+        details[open] .summary-icon { transform: rotate(90deg); }
+
+        .kpi-card .trend-arrow.up { color: var(--green); }
+        .kpi-card .trend-arrow.down { color: var(--red); }
+        
+        .live-intervention-card { animation: fadeIn 0.5s ease-out; }
+        .live-metric-value { text-shadow: 0 0 10px var(--cyan); }
+        .metric-impact-badge {
+            background-color: rgba(52, 211, 153, 0.1);
+            color: var(--green);
+            border: 1px solid rgba(52, 211, 153, 0.3);
+        }
+
+    </style>
+</head>
+<body>
+    <div class="flex h-screen bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1531297484001-80022131c5a0?q=80&w=2020&auto=format&fit=crop');">
+        
+        <nav id="sidebar" class="flex flex-col items-center p-4 space-y-6 bg-black/20 backdrop-blur-lg border-r border-white/10">
+            <div class="text-purple-400 text-2xl font-black">E</div>
+            <a href="#" class="sidebar-icon active p-3 rounded-xl" title="Dashboard" data-view="dashboard"><i class="fas fa-home fa-lg"></i></a>
+            <a href="#" class="sidebar-icon p-3 rounded-xl" title="Creative Hub" data-view="creative"><i class="fas fa-palette fa-lg"></i></a>
+            <a href="#" class="sidebar-icon p-3 rounded-xl" title="Analytics" data-view="analytics"><i class="fas fa-chart-pie fa-lg"></i></a>
+            <a href="#" class="sidebar-icon p-3 rounded-xl" title="Live Monitor" data-view="monitor"><i class="fas fa-satellite-dish fa-lg"></i></a>
+            <div class="flex-grow"></div>
+            <a href="#" class="sidebar-icon p-3 rounded-xl" title="Settings" data-view="settings"><i class="fas fa-cog fa-lg"></i></a>
+        </nav>
+
+        <main class="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto">
+            <!-- Dashboard View -->
+            <div id="view-dashboard" class="view-content">
+                <header class="flex justify-between items-center mb-6">
+                    <div><h1 class="text-3xl font-bold text-white">Campaign Dashboard</h1><p class="text-gray-400">Welcome back, Vivek.</p></div>
+                    <button id="newCampaignBtn" class="btn btn-primary"><i class="fas fa-plus mr-2"></i> New Campaign</button>
+                </header>
+                <div class="grid grid-cols-12 gap-6">
+                    <div class="col-span-12 lg:col-span-8 space-y-6">
+                        <div id="workflow-container" class="glass-card p-6 hidden"><h2 id="campaign-title" class="text-2xl font-bold text-white mb-4"></h2><div id="stages-grid" class="space-y-4"></div></div>
+                        <div id="placeholder" class="text-center py-20 glass-card"><i class="fas fa-wand-magic-sparkles fa-3x text-purple-400 mb-4"></i><h2 class="text-xl font-bold">Ready to launch greatness?</h2><p class="text-gray-400">Click "New Campaign" to start the magic.</p></div>
+                    </div>
+                    <div class="col-span-12 lg:col-span-4">
+                        <div class="glass-card h-full flex flex-col"><h3 class="p-4 text-lg font-semibold border-b border-gray-700/50 flex items-center"><i class="fas fa-robot mr-3 text-purple-300"></i>Agent Activity Log</h3><div id="agent-log" class="p-4 space-y-4 overflow-y-auto flex-grow h-96"><p class="text-gray-500 text-sm text-center pt-10">Awaiting campaign initiation...</p></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Other Views -->
+            <div id="view-creative" class="view-content hidden">
+                 <header class="mb-6"><h1 class="text-3xl font-bold text-white">Creative Hub</h1><p class="text-gray-400">A central repository for all campaign assets.</p></header>
+                <div id="creative-hub-content" class="glass-card p-6"><p class="text-gray-400 text-center py-16">No active campaigns. Start a new campaign to generate creative assets.</p></div>
+            </div>
+            <div id="view-analytics" class="view-content hidden">
+                 <header class="flex justify-between items-center mb-6">
+                    <div><h1 class="text-3xl font-bold text-white">Analytics Dashboard</h1><p class="text-gray-400">Campaign performance at a glance.</p></div>
+                    <div class="flex space-x-2">
+                        <div class="glass-card p-1"><select id="analytics-campaign-selector" class="bg-transparent focus:outline-none p-2 rounded-lg"></select></div>
+                        <div class="glass-card p-1"><select id="analytics-time-selector" class="bg-transparent focus:outline-none p-2 rounded-lg">
+                            <option value="thisWeek">This Week</option>
+                            <option value="today">Today</option>
+                            <option value="yesterday">Yesterday</option>
+                            <option value="lastWeek">Last Week</option>
+                            <option value="lifetime">Lifetime</option>
+                        </select></div>
+                    </div>
+                </header>
+                <div id="analytics-content" class="space-y-6"></div>
+            </div>
+            <div id="view-monitor" class="view-content hidden">
+                <header class="flex justify-between items-center mb-6">
+                    <div><h1 class="text-3xl font-bold text-white">Live Monitor</h1><p class="text-gray-400">Real-time campaign tracking and agent interventions.</p></div>
+                     <div class="glass-card p-1"><select id="monitor-campaign-selector" class="bg-transparent focus:outline-none p-2 rounded-lg"></select></div>
+                </header>
+                <div id="live-monitor-content" class="grid grid-cols-1 lg:grid-cols-12 gap-6"></div>
+            </div>
+             <div id="view-settings" class="view-content hidden">
+                <header class="mb-6"><h1 class="text-3xl font-bold text-white">Settings</h1><p class="text-gray-400">Configure your dashboard experience.</p></header>
+                 <div class="glass-card p-6 max-w-md">
+                    <h3 class="text-xl font-semibold mb-4">Dashboard Settings</h3>
+                     <p class="text-gray-400">This is a placeholder for future settings.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="modalContainer"></div>
+
+    <script>
+        // --- DOM Elements ---
+        const newCampaignBtn = document.getElementById('newCampaignBtn');
+        const agentLog = document.getElementById('agent-log');
+        const workflowContainer = document.getElementById('workflow-container');
+        const placeholder = document.getElementById('placeholder');
+        const campaignTitle = document.getElementById('campaign-title');
+        const stagesGrid = document.getElementById('stages-grid');
+        const modalContainer = document.getElementById('modalContainer');
+        const sidebar = document.getElementById('sidebar');
+
+        // --- App State ---
+        let currentCampaign = null;
+        let activeModal = null;
+        let chartInstances = {};
+        let campaigns = [];
+        let liveUpdateIntervals = [];
+        
+        const stagesConfig = [
+            { id: 1, title: 'Strategy & Planning', steps: [{ agents: ['Market Intelligence Agent'] }, { agents: ['KPI Planner Agent'] }, { agents: ['Persona Builder Agent', 'Channel Selection Agent', 'Scenario Planner Agent'] }] },
+            { id: 2, title: 'Creative Co-Creation', steps: [{ agents: ['Creative Co-Creation Agent'] }] },
+            { id: 3, title: 'Validation & Finalization', steps: [{ agents: ['Influencer Management Agent'] }, { agents: ['Regulatory Analyzer Agent', 'Brand Tonality Agent', 'Financial Validator Agent'] }, { agents: ['Localization Agent'] }, { agents: ['Asset QA Agent'] }] },
+            { id: 4, title: 'Execution & Optimization', steps: [{ agents: ['Campaign Orchestrator Agent', 'Channel Sync Agent'] }, { agents: ['Launch Monitor Agent'] }] }
+        ];
+
+        // --- Event Listeners ---
+        newCampaignBtn.addEventListener('click', () => showModal('newCampaign'));
+        sidebar.addEventListener('click', (e) => {
+            const icon = e.target.closest('.sidebar-icon');
+            if (icon && icon.dataset.view) switchView(icon.dataset.view);
+        });
+        document.getElementById('analytics-campaign-selector').addEventListener('change', (e) => renderAnalytics());
+        document.getElementById('analytics-time-selector').addEventListener('change', (e) => renderAnalytics());
+        document.getElementById('monitor-campaign-selector').addEventListener('change', (e) => renderLiveMonitor(e.target.value));
+
+        // --- View & Modal Management ---
+        function switchView(viewName) {
+            document.querySelectorAll('.view-content').forEach(v => v.classList.add('hidden'));
+            document.getElementById(`view-${viewName}`).classList.remove('hidden');
+            document.querySelectorAll('.sidebar-icon').forEach(i => i.classList.remove('active'));
+            document.querySelector(`.sidebar-icon[data-view="${viewName}"]`).classList.add('active');
+            if(viewName === 'analytics') renderAnalytics();
+            if(viewName === 'monitor') renderLiveMonitor(document.getElementById('monitor-campaign-selector').value);
+        }
+
+        function showModal(type, context = {}) {
+            let modalHTML = '';
+            if (type === 'newCampaign') {
+                modalHTML = `<div class="modal-content glass-card w-full max-w-lg p-8 fade-in">
+                        <h2 class="text-2xl font-bold mb-6">Create New Campaign</h2>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="productDetails" class="font-semibold text-sm mb-2 block">Product Details</label>
+                                <input type="text" id="productDetails" class="w-full bg-gray-900/50 border border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:outline-none" placeholder="e.g., 'Aqua-Hydrate' daily gel moisturizer with hyaluronic acid">
+                            </div>
+                            <div>
+                                <label for="targetConsumer" class="font-semibold text-sm mb-2 block">Target Consumer</label>
+                                <input type="text" id="targetConsumer" class="w-full bg-gray-900/50 border border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:outline-none" placeholder="e.g., Millennials (25-35) with combination to oily skin">
+                            </div>
+                            <div>
+                                <label for="campaignObjective" class="font-semibold text-sm mb-2 block">Campaign Objective</label>
+                                <input type="text" id="campaignObjective" class="w-full bg-gray-900/50 border border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:outline-none" placeholder="e.g., Establish 'Aqua-Hydrate' as the go-to for lightweight hydration">
+                            </div>
+                        </div>
+                        <div class="mt-8 flex justify-end space-x-4">
+                            <button onclick="closeModal()" class="btn btn-secondary">Cancel</button>
+                            <button onclick="startCampaign()" class="btn btn-primary">Initiate Agents</button>
+                        </div>
+                    </div>`;
+            } else if (type === 'edit') {
+                modalHTML = `<div class="modal-content glass-card w-full max-w-lg p-8 fade-in"><h2 class="text-2xl font-bold mb-4">Provide Edit Instructions</h2><p class="text-gray-400 mb-6">The Orchestrator will analyze your feedback and delegate tasks.</p><label for="editPrompt" class="font-semibold text-sm mb-2 block">Your Feedback</label><textarea id="editPrompt" class="w-full h-32 bg-gray-900/50 border border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:outline-none" placeholder="e.g., 'Make the visuals more vibrant'"></textarea><div class="mt-8 flex justify-end space-x-4"><button onclick="closeModal()" class="btn btn-secondary">Cancel</button><button onclick="submitEdit(${context.stageId})" class="btn btn-primary">Submit Revisions</button></div></div>`;
+            }
+            activeModal = document.createElement('div');
+            activeModal.className = 'modal-backdrop';
+            activeModal.innerHTML = modalHTML;
+            document.body.appendChild(activeModal);
+        }
+
+        function closeModal() {
+            if (activeModal) {
+                activeModal.remove();
+                activeModal = null;
+            }
+        }
+
+        // --- Core Campaign Logic ---
+        function startCampaign() {
+            const objective = document.getElementById('campaignObjective').value;
+            const product = document.getElementById('productDetails').value;
+            const consumer = document.getElementById('targetConsumer').value;
+
+            if (!objective.trim() || !product.trim() || !consumer.trim()) {
+                alert('Please fill out all campaign details.');
+                return;
+            }
+            closeModal();
+            
+            placeholder.classList.add('hidden');
+            workflowContainer.classList.remove('hidden');
+            workflowContainer.classList.add('fade-in');
+            
+            campaignTitle.textContent = `Campaign: "${objective}"`;
+            agentLog.innerHTML = '';
+            stagesGrid.innerHTML = '';
+            
+            currentCampaign = {
+                id: `campaign-${Date.now()}`,
+                objective,
+                product,
+                consumer,
+                currentStage: 1,
+                status: 'running',
+                stages: stagesConfig.map(s => ({...s, status: 'pending'}))
+            };
+            campaigns.push(currentCampaign);
+            updateCampaignSelectors();
+
+            renderStagesUI();
+            runStage(1);
+        }
+
+        function updateCampaignSelectors() {
+            const selectors = [document.getElementById('analytics-campaign-selector'), document.getElementById('monitor-campaign-selector')];
+            selectors.forEach(selector => {
+                selector.innerHTML = '<option value="all">All Campaigns</option>';
+                campaigns.forEach(c => {
+                    const option = document.createElement('option');
+                    option.value = c.id;
+                    option.textContent = c.objective;
+                    selector.appendChild(option);
+                });
+            });
+        }
+
+        function renderStagesUI() {
+            if (!currentCampaign) return;
+            stagesGrid.innerHTML = '';
+            currentCampaign.stages.forEach(stage => {
+                const stageEl = document.createElement('div');
+                stageEl.id = `stage-${stage.id}`;
+                stageEl.className = 'glass-card p-4 transition-all duration-300';
+
+                stageEl.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-xl font-bold flex items-center">
+                            <span id="status-dot-${stage.id}" class="status-dot mr-3"></span>
+                            ${stage.id}. ${stage.title}
+                        </h3>
+                    </div>
+                    <div id="content-${stage.id}" class="pl-7 pt-4 text-sm text-gray-300 hidden"></div>
+                    <div id="approval-container-${stage.id}" class="hidden"></div>
+                `;
+                stagesGrid.appendChild(stageEl);
+
+                const contentEl = stageEl.querySelector(`#content-${stage.id}`);
+                const approvalContainer = stageEl.querySelector(`#approval-container-${stage.id}`);
+
+                updateStageStatusUI(stage.id, stage.status);
+
+                if (stage.status === 'waiting' || stage.status === 'complete' || stage.status === 'error') {
+                    contentEl.innerHTML = generateMockContent(stage.id);
+                    contentEl.classList.remove('hidden');
+                    if (stage.status === 'waiting') {
+                        approvalContainer.innerHTML = generateApprovalUI(stage);
+                        approvalContainer.classList.remove('hidden');
+                    }
+                }
+            });
+        }
+        
+        function generateApprovalUI(stage) {
+            return `<div class="text-right mt-4 space-x-2">
+                <button class="btn btn-secondary text-xs px-3 py-1" onclick="handleEdit(${stage.id})"><i class="fas fa-pencil-alt"></i></button>
+                <button class="btn btn-secondary text-xs px-3 py-1 bg-red-500/20 border-red-500/30 text-red-300" onclick="handleReject(${stage.id})"><i class="fas fa-times"></i></button>
+                <button class="btn btn-primary text-xs px-3 py-1" onclick="handleApprove(${stage.id})"><i class="fas fa-check mr-1"></i> Approve</button>
+            </div>`;
+        }
+
+        function updateStageStatusUI(stageId, status) {
+            const dot = document.getElementById(`status-dot-${stageId}`);
+            if (dot) {
+                dot.className = `status-dot status-${status}`;
+            }
+            const stageEl = document.getElementById(`stage-${stageId}`);
+            if(stageEl) {
+                if(status === 'running') {
+                    stageEl.style.borderColor = 'var(--primary)';
+                    stageEl.style.boxShadow = '0 0 20px -5px var(--primary)';
+                } else if (status === 'complete') {
+                    stageEl.style.borderColor = 'var(--green)';
+                    stageEl.style.boxShadow = 'none';
+                } else {
+                    stageEl.style.borderColor = 'var(--border-color)';
+                    stageEl.style.boxShadow = 'none';
+                }
+            }
+        }
+
+        async function runStage(stageId) {
+            if (stageId > stagesConfig.length) {
+                logAgentActivity({ agent: 'Orchestrator', isOrchestrator: true, thought: 'All stages are approved. The campaign workflow is complete.' });
+                currentCampaign.status = 'live';
+                return;
+            }
+            
+            const stage = currentCampaign.stages.find(s => s.id === stageId);
+            currentCampaign.currentStage = stageId;
+            stage.status = 'running';
+            renderStagesUI();
+
+            logAgentActivity({ agent: 'Orchestrator', isOrchestrator: true, thought: `Initiating Stage ${stageId}: ${stage.title}.` });
+
+            for (const step of stage.steps) {
+                if (step.agents.length > 1) {
+                    logAgentActivity({ agent: 'Orchestrator', isOrchestrator: true, thought: `Executing agents in parallel: ${step.agents.join(', ')}.` });
+                    await Promise.all(step.agents.map(agentName => runSingleAgent(agentName)));
+                } else {
+                    await runSingleAgent(step.agents[0]);
+                }
+            }
+            
+            logAgentActivity({ agent: 'Orchestrator', isOrchestrator: true, thought: `Stage ${stageId} tasks complete. Generating summary for review.` });
+            
+            stage.status = 'waiting';
+            renderStagesUI();
+        }
+
+        async function runSingleAgent(agentName) {
+            await new Promise(resolve => setTimeout(resolve, 400 + Math.random() * 500));
+            logAgentActivity(getAgentMockLog(agentName));
+        }
+
+        function handleApprove(stageId) {
+            if (currentCampaign.currentStage !== stageId) return;
+            const stage = currentCampaign.stages.find(s => s.id === stageId);
+            if (stage.status !== 'waiting') return;
+
+            stage.status = 'complete';
+            logAgentActivity({ agent: 'Brand Manager', isOrchestrator: false, thought: `Stage ${stageId} approved.` });
+            if (stageId === 2) document.getElementById('creative-hub-content').innerHTML = generateMockContent(2);
+            if (stageId === 4) {
+                currentCampaign.status = 'live';
+                renderLiveMonitor(currentCampaign.id);
+            }
+            renderStagesUI();
+            runStage(stageId + 1);
+        }
+        
+        function handleReject(stageId) {
+            if (currentCampaign.currentStage !== stageId) return;
+            const stage = currentCampaign.stages.find(s => s.id === stageId);
+            if (stage.status !== 'waiting') return;
+            stage.status = 'error';
+            logAgentActivity({ agent: 'Brand Manager', isOrchestrator: false, thought: `Stage ${stageId} rejected. Workflow halted.` });
+            currentCampaign.status = 'halted';
+            renderStagesUI();
+        }
+        
+        function handleEdit(stageId) {
+            if (currentCampaign.currentStage !== stageId) return;
+            const stage = currentCampaign.stages.find(s => s.id === stageId);
+            if (stage.status !== 'waiting') return;
+            showModal('edit', { stageId });
+        }
+
+        function submitEdit(stageId) {
+            const feedback = document.getElementById('editPrompt').value;
+            closeModal();
+            logAgentActivity({ agent: 'Brand Manager', isOrchestrator: false, thought: `Requesting revisions for Stage ${stageId}: "${feedback}"` });
+            const stage = currentCampaign.stages.find(s => s.id === stageId);
+            stage.status = 'running';
+            renderStagesUI();
+            
+            setTimeout(() => {
+                logAgentActivity({ agent: 'Orchestrator', isOrchestrator: true, thought: `Analyzing feedback and delegating revision tasks for Stage ${stageId}.` });
+                 setTimeout(() => {
+                    logAgentActivity({ agent: 'Orchestrator', isOrchestrator: true, thought: `Revisions for Stage ${stageId} are complete. Ready for review.` });
+                    stage.status = 'waiting';
+                    renderStagesUI();
+                 }, 2500);
+            }, 1000);
+        }
+        
+        function handleInterventionAction(cardId, action) {
+            const card = document.getElementById(cardId);
+            const buttons = card.querySelector('.intervention-buttons');
+            let resultHTML = '';
+            if (action === 'approve') {
+                resultHTML = `<p class="text-green-400 font-bold text-xs"><i class="fas fa-check-circle mr-1"></i> Approved</p>`;
+            } else {
+                resultHTML = `<p class="text-red-400 font-bold text-xs"><i class="fas fa-times-circle mr-1"></i> Rejected</p>`;
+            }
+            buttons.innerHTML = resultHTML;
+        }
+
+        // --- Logging & Content Generation ---
+        function logAgentActivity({ agent, thought, observation, action, tool, isOrchestrator = false }) {
+            const entry = document.createElement('div');
+            entry.className = 'agent-log-entry text-sm glass-card p-3';
+            const icon = isOrchestrator ? 'fa-brain' : 'fa-robot';
+            const color = isOrchestrator ? 'text-purple-300' : 'text-cyan-300';
+            let html = `<p class="font-bold ${color} mb-2"><i class="fas ${icon} mr-2"></i>${agent}</p><div class="pl-5 border-l-2 border-gray-700 space-y-1 text-gray-400">`;
+            if (thought) html += `<p><strong class="text-gray-300">Thought:</strong> ${thought}</p>`;
+            if (observation) html += `<p><strong class="text-gray-300">Observation:</strong> ${observation}</p>`;
+            if (action) html += `<p><strong class="text-gray-300">Action:</strong> ${action} ${tool ? `<span class="text-xs font-mono bg-gray-700 px-1 py-0.5 rounded">${tool}</span>` : ''}</p>`;
+            html += `</div>`;
+            entry.innerHTML = html;
+            agentLog.appendChild(entry);
+            agentLog.scrollTop = agentLog.scrollHeight;
+        }
+
+        function getAgentMockLog(agentName) {
+            const logs = {
+                'Market Intelligence Agent': { agent: agentName, thought: "I need to understand the market for lightweight moisturizers.", observation: "Social media shows a rising trend for 'gel moisturizers' and 'non-greasy hydration'.", action: "Analyzing competitor social media and product reviews.", tool: "Web Scraper" },
+                'KPI Planner Agent': { agent: agentName, thought: "The goal is market penetration. I need KPIs for awareness and trial.", observation: "Initial purchase is key for a new moisturizer.", action: "Setting KPIs for reach, engagement, and first-time purchase rate.", tool: "Analytics Dashboard" },
+                'Persona Builder Agent': { agent: agentName, thought: "Who is the ideal customer for a gel moisturizer?", observation: "Data points to young professionals with oily or combination skin.", action: "Creating 'The Urban Professional' persona.", tool: "Data Modeler" },
+                'Channel Selection Agent': { agent: agentName, thought: "Where can we best reach urban professionals?", observation: "Instagram and LinkedIn are high-traffic platforms for this demographic.", action: "Prioritizing Instagram (lifestyle) and LinkedIn (professional context).", tool: "Platform Analyzer" },
+                'Scenario Planner Agent': { agent: agentName, thought: "I will outline the campaign strategy.", observation: "A focus on 'all-day hydration without the shine' will resonate.", action: "Designing the 'Aqua-Hydrate' campaign framework.", tool: "Strategy Engine" },
+                'Creative Co-Creation Agent': { agent: agentName, thought: "I need to create visuals that show a fresh, non-greasy feel.", observation: "Clean aesthetics with water and light textures are performing well.", action: "Generating concepts showing the moisturizer's light texture.", tool: "Generative AI Suite" },
+                'Influencer Management Agent': { agent: agentName, thought: "Find skincare influencers who focus on product science.", observation: "Influencers explaining ingredients like hyaluronic acid build trust.", action: "Identifying 5 skincare influencers with high engagement on educational content.", tool: "InfluencerDB" },
+                'Regulatory Analyzer Agent': { agent: agentName, thought: "Are claims like '24-hour hydration' substantiated?", observation: "Clinical data supports the hydration claim.", action: "Verifying all product claims against R&D data.", tool: "Compliance Checker" },
+                'Brand Tonality Agent': { agent: agentName, thought: "Does the content sound scientific yet accessible?", observation: "The tone should be informative but not overly clinical.", action: "Scoring all copy for brand voice alignment.", tool: "NLP Analyzer" },
+                'Financial Validator Agent': { agent: agentName, thought: "Is the plan within budget?", observation: "The projected spend is under the allocated amount.", action: "Validating costs against the budget.", tool: "Finance API" },
+                'Localization Agent': { agent: agentName, thought: "How to adapt for humid vs. dry climates in India?", observation: "Messaging for Mumbai should focus on 'non-sticky feel', while for Delhi it's 'combating dryness'.", action: "Creating regional messaging variations.", tool: "Geo-Targeting Planner" },
+                'Asset QA Agent': { agent: agentName, thought: "I need to check for any technical or quality issues.", observation: "All images are high-resolution.", action: "Running final quality checks on all assets.", tool: "QA Suite" },
+                'Campaign Orchestrator Agent': { agent: agentName, thought: "I need to schedule the approved posts.", observation: "The launch date is in 48 hours.", action: "Scheduling posts on all target platforms.", tool: "Social Media API" },
+                'Channel Sync Agent': { agent: agentName, thought: "Ensure all channels are coordinated.", observation: "Instagram story should precede the main post.", action: "Confirming the multi-channel launch sequence.", tool: "Sync Tool" },
+                'Launch Monitor Agent': { agent: agentName, thought: "I need to monitor the launch in real-time.", observation: "All posts went live successfully.", action: "Verifying post status across all channels.", tool: "Live Monitor" },
+            };
+            return logs[agentName] || { agent: agentName, thought: "Processing task..." };
+        }
+
+        function generateMockContent(stageId) {
+            switch(stageId) {
+                case 1: return `<div class="space-y-6"><div><h4 class="font-semibold text-gray-200 mb-3">Key Performance Indicators (KPIs)</h4><div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center"><div class="glass-card p-3"><p class="text-2xl font-bold text-cyan-300">3M</p><p class="text-xs text-gray-400">Impressions</p></div><div class="glass-card p-3"><p class="text-2xl font-bold text-cyan-300">50k</p><p class="text-xs text-gray-400">Product Trials</p></div><div class="glass-card p-3"><p class="text-2xl font-bold text-cyan-300">20%</p><p class="text-xs text-gray-400">Engagement Rate</p></div><div class="glass-card p-3"><p class="text-2xl font-bold text-green-400">₹1.5 Cr</p><p class="text-xs text-gray-400">Budget</p></div></div></div><div><h4 class="font-semibold text-gray-200 mb-3">Target Channels</h4><div class="flex items-center space-x-8"><div class="text-center"><i class="fab fa-instagram text-4xl text-pink-500"></i><p class="text-xs mt-1">Instagram</p></div><div class="text-center"><i class="fab fa-youtube text-4xl text-red-500"></i><p class="text-xs mt-1">YouTube</p></div><div class="text-center"><i class="fab fa-facebook text-4xl text-blue-500"></i><p class="text-xs mt-1">Facebook</p></div></div></div></div>`;
+                case 2: return `<details class="group"><summary class="flex items-center justify-between p-3 rounded-lg bg-gray-800/50 hover:bg-gray-700/50"><span class="font-semibold">Creative Assets Ready for Review</span><i class="fas fa-chevron-right summary-icon"></i></summary><div class="mt-4 space-y-6 p-2"><div class="glass-card p-4"><h5 class="font-bold mb-2 flex items-center"><i class="fab fa-instagram mr-2 text-pink-400"></i>Instagram Post</h5><div class="flex flex-col md:flex-row gap-4"><img src="assets/instagram_post.jpg" class="rounded-lg w-full md:w-1/3 h-auto" alt="Instagram Post"><div class="text-sm"><p class="font-semibold">vervewell_care</p><p class="mt-2">Unlock all-day hydration without the shine. Our new Aqua-Hydrate gel moisturizer is here to give your skin the drink it deserves. 💧</p><p class="mt-2 text-cyan-400">#AquaHydrate #GelMoisturizer #HydrationStation #VerveWell</p></div></div></div><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div class="glass-card p-4"><h5 class="font-bold mb-2 flex items-center"><i class="fab fa-youtube mr-2 text-red-500"></i>YouTube Thumbnail</h5><img src="assets/youtube_thumbnail.jpg" class="rounded-lg w-full h-auto" alt="YouTube Thumbnail"></div><div class="glass-card p-4 flex flex-col"><h5 class="font-bold mb-2 flex items-center"><i class="fas fa-video mr-2 text-purple-400"></i>Short-Form Video</h5><video controls class="rounded-lg w-full h-auto mt-2"><source src="assets/short_reel.mp4" type="video/mp4">Your browser does not support the video tag.</video><p class="text-xs text-center mt-2">The Reel: "So Lightweight that you can't feel"</p></div></div></div></details>`;
+                case 3: return `<div class="space-y-3 p-2"><div class="flex items-center text-base"><i class="fas fa-check-circle text-green-400 mr-3 fa-fw"></i><p>Regulatory & Compliance Check: <span class="font-semibold ml-2">Passed</span></p></div><div class="flex items-center text-base"><i class="fas fa-check-circle text-green-400 mr-3 fa-fw"></i><p>Brand Tonality Alignment: <span class="font-semibold ml-2">98% Match</span></p></div><div class="flex items-center text-base"><i class="fas fa-check-circle text-green-400 mr-3 fa-fw"></i><p>Financial Validation: <span class="font-semibold ml-2">Within Budget</span></p></div><div class="flex items-center text-base"><i class="fas fa-check-circle text-green-400 mr-3 fa-fw"></i><p>Asset QA Check: <span class="font-semibold ml-2">Passed</span></p></div></div>`;
+                case 4: return `<div><h4 class="font-semibold text-gray-200 mb-3">Launch Confirmation</h4><p class="text-gray-400 mb-4">Launch Monitor Agent confirms all assets have been successfully deployed. Please review and approve to proceed with live monitoring.</p><div class="space-y-3 p-2"><div class="flex items-center text-base"><i class="fab fa-instagram text-green-400 mr-3 fa-fw"></i><p>Instagram Post & Story: <span class="font-semibold ml-2">Live</span></p></div><div class="flex items-center text-base"><i class="fab fa-youtube text-green-400 mr-3 fa-fw"></i><p>YouTube Main Video & Short: <span class="font-semibold ml-2">Live</span></p></div><div class="flex items-center text-base"><i class="fab fa-facebook text-green-400 mr-3 fa-fw"></i><p>Facebook Video Ad: <span class="font-semibold ml-2">Live</span></p></div></div></div>`;
+                default: return 'Content generation in progress...';
+            }
+        }
+        
+        // --- Analytics & Monitor Rendering ---
+        const analyticsData = {
+            lifetime: { kpis: { roas: '4.2x', cpa: '₹120.50', sentiment: '85%', sov: '18%' }, funnel: [2105340, 315801, 157900, 15790, 7895], roi: [4.8, 3.5, 2.9] },
+            lastWeek: { kpis: { roas: '4.5x', cpa: '₹115.20', sentiment: '86%', sov: '19%' }, funnel: [526335, 78950, 39475, 3948, 1974], roi: [5.1, 3.8, 3.1] },
+            thisWeek: { kpis: { roas: '4.3x', cpa: '₹118.10', sentiment: '85.5%', sov: '18.5%' }, funnel: [410112, 61516, 30758, 3076, 1538], roi: [4.9, 3.6, 3.0] },
+            yesterday: { kpis: { roas: '4.1x', cpa: '₹122.80', sentiment: '84%', sov: '18.2%' }, funnel: [60234, 9035, 4517, 452, 226], roi: [4.5, 3.3, 2.8] },
+            today: { kpis: { roas: '4.0x', cpa: '₹125.00', sentiment: '83%', sov: '18.1%' }, funnel: [31056, 4658, 2329, 233, 116], roi: [4.2, 3.1, 2.6] }
+        };
+
+        function renderAnalytics() {
+            const container = document.getElementById('analytics-content');
+            const timePeriod = document.getElementById('analytics-time-selector').value;
+            const data = analyticsData[timePeriod];
+
+            const liveCampaigns = campaigns.filter(c => c.status === 'live');
+            if (liveCampaigns.length === 0) {
+                container.innerHTML = `<div class="glass-card p-6"><p class="text-gray-400 text-center py-16">No live campaigns to analyze. Complete a campaign workflow to see data here.</p></div>`;
+                return;
+            }
+            container.innerHTML = `
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                    <div class="kpi-card glass-card p-4 text-center"><p class="text-sm text-gray-400">ROAS</p><p class="text-3xl font-bold my-1">${data.kpis.roas}</p><p class="text-xs text-gray-400"><span class="trend-arrow up fas fa-arrow-up"></span> vs period avg</p></div>
+                    <div class="kpi-card glass-card p-4 text-center"><p class="text-sm text-gray-400">Cost Per Acquisition</p><p class="text-3xl font-bold my-1">${data.kpis.cpa}</p><p class="text-xs text-gray-400"><span class="trend-arrow down fas fa-arrow-down"></span> vs period avg</p></div>
+                    <div class="kpi-card glass-card p-4 text-center"><p class="text-sm text-gray-400">Brand Sentiment</p><p class="text-3xl font-bold my-1">${data.kpis.sentiment}</p><p class="text-xs text-gray-400"><span class="trend-arrow up fas fa-arrow-up"></span> vs period avg</p></div>
+                    <div class="kpi-card glass-card p-4 text-center"><p class="text-sm text-gray-400">Share of Voice</p><p class="text-3xl font-bold my-1">${data.kpis.sov}</p><p class="text-xs text-gray-400"><span class="trend-arrow up fas fa-arrow-up"></span> vs period avg</p></div>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                    <div class="glass-card p-6 lg:col-span-3 h-96"><h3 class="font-semibold mb-4">Conversion Funnel</h3><canvas id="funnelChart"></canvas></div>
+                    <div class="glass-card p-6 lg:col-span-2 h-96"><h3 class="font-semibold mb-4">Channel ROI</h3><canvas id="roiChart"></canvas></div>
+                </div>
+            `;
+            setupAnalyticsCharts(data);
+        }
+
+        function renderLiveMonitor(campaignId) {
+            const container = document.getElementById('live-monitor-content');
+            liveUpdateIntervals.forEach(clearInterval);
+            liveUpdateIntervals = [];
+
+            const liveCampaigns = campaigns.filter(c => c.status === 'live');
+            if (liveCampaigns.length === 0) {
+                container.innerHTML = `<div class="col-span-12 glass-card p-6"><p class="text-gray-400 text-center py-16">No campaigns are currently live. Approve a campaign through the final stage to activate live monitoring.</p></div>`;
+                return;
+            }
+            container.innerHTML = `
+                <div class="lg:col-span-8 space-y-4">
+                    <h3 class="text-xl font-bold">Live Agent Interventions</h3>
+                    <div id="interventions-feed" class="space-y-4"></div>
+                </div>
+                <div class="lg:col-span-4 space-y-4">
+                    <h3 class="text-xl font-bold">Real-Time Metrics</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="glass-card p-4 text-center"><p class="text-gray-400 text-sm">Impressions/hr</p><p class="text-3xl font-bold live-metric-value" id="live-impressions">0</p></div>
+                        <div class="glass-card p-4 text-center"><p class="text-gray-400 text-sm">Engagement Rate</p><p class="text-3xl font-bold live-metric-value" id="live-engagement">0%</p></div>
+                        <div class="glass-card p-4 text-center"><p class="text-gray-400 text-sm">CPA</p><p class="text-3xl font-bold live-metric-value" id="live-cpa">₹0</p></div>
+                        <div class="glass-card p-4 text-center"><p class="text-gray-400 text-sm">Current Spend</p><p class="text-3xl font-bold live-metric-value" id="live-spend">₹0</p></div>
+                    </div>
+                    <div class="glass-card p-4 h-64"><h3 class="text-lg font-semibold mb-2">Live Sentiment</h3><canvas id="liveSentimentChart"></canvas></div>
+                </div>
+            `;
+            startLiveUpdates();
+        }
+
+        function startLiveUpdates() {
+            const interventionsFeed = document.getElementById('interventions-feed');
+            let spend = 1250340;
+            let cpa = 125.30;
+
+            const mockInterventions = [
+                { type: 'auto', agent: 'Engagement Tracker', icon: 'fa-users', color: 'text-yellow-400', obs: "Ad creative showing a woman in her 30s is underperforming with the Gen-Z segment.", act: "Reduced its budget by 50% and reallocated to the top-performing 'Splash Test' video.", impact: 'CPA -5%' },
+                { type: 'approval', agent: 'Media Optimizer', icon: 'fa-chart-pie', color: 'text-green-400', obs: 'YouTube pre-roll ads have a higher conversion rate than Instagram Stories.', act: 'Propose shifting an additional ₹75,000 from Instagram to YouTube Ads budget.', impact: 'Est. Conversions +15%' },
+                { type: 'auto', agent: 'CX Brand Concierge', icon: 'fa-comments', color: 'text-cyan-400', obs: "Users are asking if Aqua-Hydrate is suitable for sensitive skin.", act: "Deployed chatbot to answer with 'Yes, it\\'s dermatologically tested and fragrance-free.'", impact: 'Sentiment +3%' },
+            ];
+            let interventionIndex = 0;
+
+            const interventionInterval = setInterval(() => {
+                if(interventionIndex < mockInterventions.length) {
+                    const item = mockInterventions[interventionIndex];
+                    const cardId = `intervention-${Date.now()}`;
+                    const card = document.createElement('div');
+                    card.id = cardId;
+                    card.className = 'live-intervention-card glass-card p-4';
+                    let buttonsHTML = '';
+                    if (item.type === 'auto') {
+                        buttonsHTML = `<button class="btn btn-secondary btn-xs px-2 py-1 text-xs opacity-50 cursor-not-allowed">Acknowledged</button>`;
+                    } else {
+                        buttonsHTML = `<button class="btn btn-secondary text-xs px-3 py-1 bg-red-500/20 border-red-500/30 text-red-300" onclick="handleInterventionAction('${cardId}', 'reject')">Reject</button>
+                                     <button class="btn btn-primary text-xs px-3 py-1" onclick="handleInterventionAction('${cardId}', 'approve')">Approve</button>`;
+                    }
+                    card.innerHTML = `
+                        <div class="flex justify-between items-start">
+                           <div>
+                                <h4 class="font-bold mb-2 flex items-center ${item.color}"><i class="fas ${item.icon} mr-2"></i>${item.agent}</h4>
+                                <p class="text-sm"><strong class="text-gray-300">Observation:</strong> ${item.obs}</p>
+                                <p class="text-sm"><strong class="text-gray-300">Action:</strong> ${item.act}</p>
+                           </div>
+                           <div class="metric-impact-badge text-xs font-bold px-2 py-1 rounded-full whitespace-nowrap">${item.impact}</div>
+                        </div>
+                        <div class="text-right mt-4 space-x-2 intervention-buttons">${buttonsHTML}</div>`;
+                    if(interventionsFeed) interventionsFeed.prepend(card);
+                    interventionIndex++;
+                }
+            }, 6000);
+            liveUpdateIntervals.push(interventionInterval);
+
+            const metricInterval = setInterval(() => {
+                const liveImpressions = document.getElementById('live-impressions');
+                const liveEngagement = document.getElementById('live-engagement');
+                const liveCpa = document.getElementById('live-cpa');
+                const liveSpend = document.getElementById('live-spend');
+
+                if(liveImpressions) liveImpressions.textContent = (25000 + Math.floor(Math.random() * 1000)).toLocaleString();
+                if(liveEngagement) liveEngagement.textContent = (15.2 + Math.random()).toFixed(1) + '%';
+                cpa = cpa * (1 + (Math.random() - 0.5) * 0.02);
+                if(liveCpa) liveCpa.textContent = `₹${cpa.toFixed(2)}`;
+                spend += Math.floor(Math.random() * 5000);
+                if(liveSpend) liveSpend.textContent = `₹${spend.toLocaleString()}`;
+            }, 2000);
+            liveUpdateIntervals.push(metricInterval);
+            
+            setupLiveMonitorChart();
+        }
+        
+        function setupLiveMonitorChart() {
+            const canvas = document.getElementById('liveSentimentChart');
+            if(!canvas) return;
+            const ctx = canvas.getContext('2d');
+            
+            if(chartInstances.liveSentiment) chartInstances.liveSentiment.destroy();
+
+            chartInstances.liveSentiment = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Positive Sentiment',
+                        data: [],
+                        borderColor: 'var(--green)',
+                        backgroundColor: 'rgba(52, 211, 153, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { min: 60, max: 100, ticks: { color: '#9CA3AF', callback: (v) => v + '%' }, grid: { color: 'rgba(255,255,255,0.1)' } },
+                        x: { type: 'time', time: { unit: 'second' }, ticks: { color: '#9CA3AF', display: false }, grid: { display: false } }
+                    }
+                }
+            });
+
+            const sentimentInterval = setInterval(() => {
+                const chart = chartInstances.liveSentiment;
+                if(chart) {
+                    const newData = 85 + (Math.random() - 0.5) * 10;
+                    chart.data.labels.push(new Date());
+                    chart.data.datasets[0].data.push(newData);
+                    if (chart.data.labels.length > 20) {
+                        chart.data.labels.shift();
+                        chart.data.datasets[0].data.shift();
+                    }
+                    chart.update('quiet');
+                }
+            }, 2000);
+            liveUpdateIntervals.push(sentimentInterval);
+        }
+
+        function setupAnalyticsCharts(data) {
+            Object.values(chartInstances).forEach(chart => { if(chart.canvas.id !== 'liveSentimentChart') chart.destroy() });
+            const defaultOptions = { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { color: '#9CA3AF' }, grid: { color: 'rgba(255,255,255,0.1)' } }, x: { ticks: { color: '#9CA3AF' }, grid: { display: false } } } };
+
+            chartInstances.funnel = new Chart('funnelChart', { type: 'bar', data: { labels: ['Impressions', 'Engagements', 'Clicks', 'Add to Cart', 'Purchase'], datasets: [{ label: 'Users', data: data.funnel, backgroundColor: ['#A78BFA', '#8B5CF6', '#7C3AED', '#6D28D9', '#5B21B6'], borderWidth: 0 }] }, options: { ...defaultOptions, indexAxis: 'y' } });
+            chartInstances.roi = new Chart('roiChart', { type: 'bar', data: { labels: ['Instagram', 'YouTube', 'Facebook'], datasets: [{ label: 'ROI', data: data.roi, backgroundColor: ['#EC4899', '#EF4444', '#1877F2'], borderWidth: 0, borderRadius: 5 }] }, options: { ...defaultOptions, scales: { ...defaultOptions.scales, y: { ...defaultOptions.scales.y, ticks: { ...defaultOptions.scales.y.ticks, callback: (v) => v + 'x' } } } } });
+        }
+
+        window.onload = () => {
+            renderAnalytics();
+            renderLiveMonitor();
+        };
+
+    </script>
+</body>
+</html>
